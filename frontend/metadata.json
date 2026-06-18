@@ -1,0 +1,6 @@
+{
+  "name": "ServeSmart",
+  "description": "A full-stack service marketplace platform for booking home services like cleaning, plumbing, and repairs.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": []
+}

@@ -1,0 +1,5 @@
+{
+  "watch": ["backend", "frontend/src", "frontend/components", "frontend/lib"],
+  "ext": "ts,json",
+  "exec": "tsx backend/server.ts"
+}
