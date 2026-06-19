@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
-import { Service, Category, User } from '../types';
+import { Service, Category, User, Booking } from '../types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -28,8 +28,11 @@ export const AdminDashboard = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState({ userCount: 0, serviceCount: 0, pendingServices: 0, bookingCount: 0 });
   const [pendingServices, setPendingServices] = useState<Service[]>([]);
+  const [allServices, setAllServices] = useState<Service[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [activeTab, setActiveTab] = useState('moderation');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [authStatus, setAuthStatus] = useState('');
@@ -52,16 +55,20 @@ export const AdminDashboard = () => {
       setLoading(true);
       setLoadError('');
       try {
-        const [statsRes, pendingRes, catRes, usersRes] = await Promise.all([
+        const [statsRes, pendingRes, catRes, usersRes, servicesRes, bookingsRes] = await Promise.all([
           api.get('/admin/stats'),
           api.get('/services?status=pending'),
           api.get('/categories'),
-          api.get('/admin/users')
+          api.get('/admin/users'),
+          api.get('/admin/services'),
+          api.get('/admin/bookings')
         ]);
         setStats(statsRes.data);
         setPendingServices(Array.isArray(pendingRes.data) ? pendingRes.data : []);
         setCategories(Array.isArray(catRes.data) ? catRes.data : []);
         setUsers(Array.isArray(usersRes.data) ? usersRes.data : []);
+        setAllServices(Array.isArray(servicesRes.data) ? servicesRes.data : []);
+        setBookings(Array.isArray(bookingsRes.data) ? bookingsRes.data : []);
       } catch (error: any) {
         console.error('Admin fetch failed', error);
         const message = error.response?.data?.message || 'Admin APIs failed to load';
@@ -130,6 +137,7 @@ export const AdminDashboard = () => {
     try {
       await api.patch(`/admin/services/${id}/status`, { status, reason });
       setPendingServices(prev => prev.filter(s => s.id !== id));
+      setAllServices(prev => prev.map(s => s.id === id ? { ...s, status, rejectionReason: reason || '' } : s));
       toast.success(`Service ${status}`);
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Moderation failed');
@@ -151,6 +159,7 @@ export const AdminDashboard = () => {
     try {
       await api.delete(`/services/${id}`);
       setPendingServices(prev => prev.filter(s => s.id !== id));
+      setAllServices(prev => prev.filter(s => s.id !== id));
       toast.success('Service deleted');
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Delete failed');
@@ -234,47 +243,35 @@ export const AdminDashboard = () => {
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6 flex items-center gap-4">
-            <div className="bg-blue-100 p-3 rounded-lg text-blue-600"><Users /></div>
-            <div>
-              <p className="text-sm text-muted-foreground">Users</p>
-              <p className="text-2xl font-bold">{stats.userCount}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6 flex items-center gap-4">
-            <div className="bg-orange-100 p-3 rounded-lg text-orange-600"><LayoutGrid /></div>
-            <div>
-              <p className="text-sm text-muted-foreground">Services</p>
-              <p className="text-2xl font-bold">{stats.serviceCount}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6 flex items-center gap-4">
-            <div className="bg-yellow-100 p-3 rounded-lg text-yellow-600"><AlertCircle /></div>
-            <div>
-              <p className="text-sm text-muted-foreground">Pending</p>
-              <p className="text-2xl font-bold">{stats.pendingServices}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6 flex items-center gap-4">
-            <div className="bg-green-100 p-3 rounded-lg text-green-600"><Wrench /></div>
-            <div>
-              <p className="text-sm text-muted-foreground">Bookings</p>
-              <p className="text-2xl font-bold">{stats.bookingCount}</p>
-            </div>
-          </CardContent>
-        </Card>
+        {[
+          { tab: 'users', label: 'Users', value: stats.userCount, icon: Users, iconClass: 'bg-blue-100 text-blue-600' },
+          { tab: 'services', label: 'Services', value: stats.serviceCount, icon: LayoutGrid, iconClass: 'bg-orange-100 text-orange-600' },
+          { tab: 'moderation', label: 'Pending', value: stats.pendingServices, icon: AlertCircle, iconClass: 'bg-yellow-100 text-yellow-600' },
+          { tab: 'bookings', label: 'Bookings', value: stats.bookingCount, icon: Wrench, iconClass: 'bg-green-100 text-green-600' },
+        ].map((item) => {
+          const Icon = item.icon;
+          return (
+            <button key={item.tab} type="button" className="w-full text-left" onClick={() => setActiveTab(item.tab)}>
+              <Card className={activeTab === item.tab ? 'border-[#1a4d2e] ring-2 ring-[#1a4d2e]/20' : 'transition hover:border-[#1a4d2e]/50'}>
+                <CardContent className="p-6 flex items-center gap-4">
+                  <div className={`${item.iconClass} p-3 rounded-lg`}><Icon /></div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">{item.label}</p>
+                    <p className="text-2xl font-bold">{item.value}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Click to view details</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </button>
+          );
+        })}
       </div>
 
-      <Tabs defaultValue="moderation" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 md:w-[600px]">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 md:w-[900px] md:grid-cols-5">
           <TabsTrigger value="moderation">Moderation Queue</TabsTrigger>
+          <TabsTrigger value="services">All Services</TabsTrigger>
+          <TabsTrigger value="bookings">Bookings</TabsTrigger>
           <TabsTrigger value="categories">Categories</TabsTrigger>
           <TabsTrigger value="users">Users / Approval</TabsTrigger>
         </TabsList>
@@ -333,6 +330,144 @@ export const AdminDashboard = () => {
                   </CardContent>
                 </Card>
               ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="services" className="mt-6 space-y-4">
+          <div>
+            <h2 className="text-xl font-bold">All Services</h2>
+            <p className="text-sm text-muted-foreground">
+              Uses `GET /api/admin/services`. Review every provider service, status, category, price, and provider.
+            </p>
+          </div>
+          {allServices.length === 0 ? (
+            <Card className="p-12 text-center text-muted-foreground">
+              No services found.
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {allServices.map(service => {
+                const providerName = (service as any).providerName || 'Provider';
+                const providerEmail = (service as any).providerEmail || '';
+                const categoryName = (service as any).categoryName || 'Category';
+                return (
+                  <Card key={service.id}>
+                    <CardContent className="p-5">
+                      <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+                        <div className="flex min-w-0 gap-4">
+                          <img
+                            src={service.image || 'https://images.unsplash.com/photo-1581578731548-c64695cc6958?auto=format&fit=crop&q=80&w=800'}
+                            className="h-24 w-24 shrink-0 rounded-lg object-cover"
+                            referrerPolicy="no-referrer"
+                            alt={service.name}
+                          />
+                          <div className="min-w-0 space-y-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="font-bold text-lg">{service.name}</h3>
+                              <Badge variant={service.status === 'approved' ? 'default' : service.status === 'rejected' ? 'destructive' : 'secondary'}>
+                                {service.status}
+                              </Badge>
+                            </div>
+                            <p className="line-clamp-2 text-sm text-muted-foreground">{service.description}</p>
+                            <div className="flex flex-wrap gap-2 text-xs">
+                              <Badge variant="outline">₹{service.price}</Badge>
+                              <Badge variant="outline">{categoryName}</Badge>
+                              <Badge variant="outline">{service.location}</Badge>
+                              <Badge variant="outline">{providerName}{providerEmail ? ` · ${providerEmail}` : ''}</Badge>
+                            </div>
+                            {service.rejectionReason && (
+                              <p className="text-sm text-red-600">Rejected reason: {service.rejectionReason}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex shrink-0 flex-wrap gap-2">
+                          {service.status === 'pending' && (
+                            <>
+                              <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleApproval(service.id, 'approved')}>
+                                <CheckCircle className="h-4 w-4 mr-1" /> Approve
+                              </Button>
+                              <Button size="sm" variant="outline" className="text-red-600 border-red-200" onClick={() => handleApproval(service.id, 'rejected')}>
+                                <XCircle className="h-4 w-4 mr-1" /> Reject
+                              </Button>
+                            </>
+                          )}
+                          <Button size="sm" variant="destructive" onClick={() => handleDeleteService(service.id)}>
+                            <Trash2 className="h-4 w-4 mr-1" /> Delete
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="bookings" className="mt-6 space-y-4">
+          <div>
+            <h2 className="text-xl font-bold">All Bookings</h2>
+            <p className="text-sm text-muted-foreground">
+              Uses `GET /api/admin/bookings`. See who booked which service, provider, schedule, amount, status, and payment.
+            </p>
+          </div>
+          {bookings.length === 0 ? (
+            <Card className="p-12 text-center text-muted-foreground">
+              No bookings found.
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {bookings.map(booking => {
+                const userEmail = (booking as any).userEmail || '';
+                const providerEmail = (booking as any).providerEmail || '';
+                return (
+                  <Card key={booking.id}>
+                    <CardContent className="p-5 space-y-4">
+                      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="font-bold text-lg">{booking.serviceName || 'Service'}</h3>
+                            <Badge variant="outline" className="capitalize">{booking.status}</Badge>
+                            <Badge variant={booking.paymentStatus === 'paid' ? 'default' : booking.paymentStatus === 'failed' ? 'destructive' : 'secondary'} className="capitalize">
+                              Payment: {booking.paymentStatus}
+                            </Badge>
+                          </div>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            Booked by <span className="font-medium text-foreground">{booking.userName || 'Customer'}</span>
+                            {userEmail ? ` (${userEmail})` : ''}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Provider <span className="font-medium text-foreground">{booking.providerName || 'Provider'}</span>
+                            {providerEmail ? ` (${providerEmail})` : ''}
+                          </p>
+                        </div>
+                        <div className="text-left md:text-right">
+                          <p className="text-xl font-bold">₹{booking.totalAmount}</p>
+                          <p className="text-sm text-muted-foreground">{booking.date} · {booking.time}</p>
+                        </div>
+                      </div>
+                      <div className="grid gap-3 rounded-lg border bg-muted/30 p-3 text-sm md:grid-cols-3">
+                        <div>
+                          <p className="text-muted-foreground">Address</p>
+                          <p className="font-medium">{booking.address}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Booking ID</p>
+                          <p className="break-all font-medium">{booking.id}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Created</p>
+                          <p className="font-medium">{booking.createdAt ? new Date(booking.createdAt).toLocaleString() : 'N/A'}</p>
+                        </div>
+                      </div>
+                      {booking.rejectionReason && (
+                        <p className="text-sm text-red-600">Rejected reason: {booking.rejectionReason}</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </TabsContent>

@@ -41,3 +41,52 @@ export const approveProvider = async (req: Request, res: Response) => {
     res.status(400).json({ message: 'Error approving provider' });
   }
 };
+
+export const getAllServices = async (req: Request, res: Response) => {
+  try {
+    const services = await Service.find()
+      .populate('providerId', 'displayName email')
+      .populate('categoryId', 'name')
+      .sort({ createdAt: -1 });
+
+    const formatted = services.map((service) => {
+      const data = service.toJSON();
+      return {
+        ...data,
+        providerName: (service.providerId as any)?.displayName || 'Provider',
+        providerEmail: (service.providerId as any)?.email || '',
+        categoryName: (service.categoryId as any)?.name || 'Category',
+      };
+    });
+
+    res.json(formatted);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching admin services' });
+  }
+};
+
+export const getAllBookings = async (req: Request, res: Response) => {
+  try {
+    const bookings = await Booking.find()
+      .populate('serviceId', 'name')
+      .populate('userId', 'displayName email')
+      .populate('providerId', 'displayName email')
+      .sort({ createdAt: -1 });
+
+    const formatted = bookings.map((booking) => {
+      const data = booking.toJSON();
+      return {
+        ...data,
+        serviceName: (booking.serviceId as any)?.name || 'Service',
+        userName: (booking.userId as any)?.displayName || 'Customer',
+        userEmail: (booking.userId as any)?.email || '',
+        providerName: (booking.providerId as any)?.displayName || 'Provider',
+        providerEmail: (booking.providerId as any)?.email || '',
+      };
+    });
+
+    res.json(formatted);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching admin bookings' });
+  }
+};

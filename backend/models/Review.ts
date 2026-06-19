@@ -5,7 +5,7 @@ const reviewSchema = new mongoose.Schema({
   serviceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Service', required: true },
   bookingId: { type: mongoose.Schema.Types.ObjectId, ref: 'Booking', required: true },
   rating: { type: Number, required: true, min: 1, max: 5 },
-  comment: String,
+  comment: {type: String, required: true , minLength: 4 },
   createdAt: { type: Date, default: Date.now }
 });
 
