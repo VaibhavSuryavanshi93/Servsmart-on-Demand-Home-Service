@@ -264,7 +264,7 @@ APP_URL=http://localhost:5173
 
 ## Dashboard
 ![User Screenshot](./frontend/public/uploads/User.png)
-![Admin Screenshot](./frontend/public/uploads/frontend/public/uploads/Screenshot%202026-06-30%20165532.png)
+![Admin Screenshot](./frontend/public/uploads/frontend/public/uploads/Admin.png)
 
 
 
