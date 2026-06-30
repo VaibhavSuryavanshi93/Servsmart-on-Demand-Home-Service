@@ -13,7 +13,7 @@ const serviceSchema = new mongoose.Schema({
   },
   name: { type: String, required: true },
   description: String,
-  price: { type: Number, required: true },
+  price: { type: Number, required: true ,min: 20 },
   duration: String,
   image: String,
   location: { type: String, required: true, default: "Global" },

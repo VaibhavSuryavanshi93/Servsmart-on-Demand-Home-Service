@@ -87,6 +87,9 @@ export const createService = async (req: any, res: Response) => {
       message: "All mandatory fields are required",
     });
   }
+  if (price < 20) {
+    return res.status(403).json({message: "Price should be more than 20"})
+  }
   try {
     const user = await User.findById(req.user.id);
     if (!user) {
