@@ -11,6 +11,7 @@ ServSmart is a full-stack MERN-based web application that connects customers wit
 * User Registration & Login
 * JWT Authentication
 * Browse Services by Category
+* AI recommended Services
 * Search and Filter Services
 * View Service Details
 * Book Home Services
@@ -84,6 +85,7 @@ Nodemailer (Email Notifications)
 
 * Cloudinary
 * Stripe
+* Google Gemini
 
 ### Tools
 
@@ -91,6 +93,14 @@ Nodemailer (Email Notifications)
 * Git & GitHub
 
 ---
+
+### AI recommendation working
+
+* Only Login User can view recommended-services by AI
+* If the user has bookings, it recommends other approved services from the same booked categories.
+* It excludes services already booked by that user.
+* If there are not enough category matches, it fills with top-rated approved services.
+* If the user has no bookings, it shows top-rated approved services.
 
 ## 📂 Project Structure
 
@@ -218,14 +228,6 @@ APP_URL=http://localhost:5173
 
 ---
 
-* JWT Authentication
-* Password Hashing using bcrypt
-* Role-Based Authorization
-* Protected API Routes
-* Input Validation
-* Secure Payment Processing
-
----
 
 ## 🎯 Objectives
 
@@ -250,5 +252,20 @@ APP_URL=http://localhost:5173
 
 
 **Project Title:** ServSmart – On-Demand Home Service Platform
+
+## 📸 Screenshots
+
+### Home Page
+![Home Screenshot](./frontend/public/uploads/Home.png)
+
+### Service Page
+![Service Screenshot](./frontend/public/uploads/Services.png)
+![Service Screenshot](./frontend/public/uploads/catalog.png)
+
+## Dashboard
+![User Screenshot](./frontend/public/uploads/User.png)
+![Admin Screenshot](./frontend/public/uploads/frontend/public/uploads/Screenshot%202026-06-30%20165532.png)
+
+
 
 
